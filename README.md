@@ -1,6 +1,5 @@
 ### Extended DSHOT Telemetry (EDT) specification v2 (2023)
 
-I will try to keep this draft updated with all proposals you have. Please, if I am wrong with anything let me know. I will try to update this draft assap.
 **_TBD_** - Stands for to be defined
 
 ### History
