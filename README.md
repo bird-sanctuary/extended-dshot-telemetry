@@ -22,7 +22,7 @@ or in other words:
 eRPM = m * 2 ^ e
 ```
 
-From this, one can easily see, that the same eRPM values could be encoded in multiple different ways, let's for example take the eRPM value of 8, it could be enncoded in this variations:
+From this, one can easily see, that the same eRPM values could be encoded in multiple different ways, let's for example take the eRPM value of 8, it could be encoded in these variations:
 
 ```
 000 0 0000 1000
@@ -30,7 +30,7 @@ From this, one can easily see, that the same eRPM values could be encoded in mul
 010 0 0000 0010
 011 0 0000 0001
 ```
-This is true for a lot of different values, thus the idea was born to always right shift the rpm values as far as possible so that no ambiguity is left and each value only has one representation, the other now free values can be used to encode different data.
+This is true for a lot of different values, thus the idea was born to always right shift the rpm values as far as possible, so that no ambiguity is left and each value has only one representation, the other - now free - values can be used to encode different data.
 
 The first 3 bit (the exponent) together with the 4th bit allow to distinguish if it is an eRPM Frame, or an extended DSHOT frame. Those four bits are called the **prefix**.
 
