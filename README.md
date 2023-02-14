@@ -1,11 +1,11 @@
 # Extended DSHOT Telemetry (EDT) Specification
 
-Extended DSHOT Telemery extends - as the name suggests - the telemetry data which is sent from ESC (via signal wire) to the flight-controller. For this to work, bi-directional DSHOT needs to be active.
+Extended DSHOT Telemetry, as the name suggests, extends the telemetry data which is sent from ESC (via signal wire) to the flight-controller. For this to work, bi-directional DSHOT needs to be active.
 
-In addition to the eRPM data which was the initial data being transmitted back to the flight-controller, EDT allows to encode further details in the telemetry frame.
+In addition to the eRPM data which was the initial data being transmitted back to the flight-controller, EDT allows the encoding of further details in the telemetry frame.
 
 ## Frame structure
-The frame structure of the telemetry frame is 16 bit long: `eeem mmmm mmmm`
+The frame structure of the telemetry frame is 16 bits long: `eeem mmmm mmmm`
 
 * `eee`: the exponent
 * `mmmmmmmmm`: the eRPM value
@@ -22,7 +22,7 @@ or in other words:
 eRPM = m * 2 ^ e
 ```
 
-From this, one can easily see, that the same eRPM values could be encoded in multiple different ways, let's for example take the eRPM value of 8, it could be encoded in these variations:
+From this, one can easily see that the same eRPM values could be encoded in multiple different ways, let's for example take the eRPM value of 8, it could be encoded in these variations:
 
 ```
 000 0 0000 1000
@@ -32,7 +32,7 @@ From this, one can easily see, that the same eRPM values could be encoded in mul
 ```
 This is true for a lot of different values, thus the idea was born to always right shift the rpm values as far as possible, so that no ambiguity is left and each value has only one representation, the other - now free - values can be used to encode different data.
 
-The first 3 bit (the exponent) together with the 4th bit allow to distinguish if it is an eRPM Frame, or an extended DSHOT frame. Those four bits are called the **prefix**.
+The first three bits (the exponent) together with the 4th bit allow to distinguish between eRPM and extended DSHOT frames. Those four bits are called the **prefix**.
 
 ### eRPM Frames
 - `000 0 mmmm mmmm` - [0, 1, 2, ... , 255]
@@ -45,7 +45,7 @@ The first 3 bit (the exponent) together with the 4th bit allow to distinguish if
 - `110 1 mmmm mmmm` - [16384, 16448, 16512, ..., 32704]
 - `111 1 mmmm mmmm` - [32768, 32896, 33024, ..., 65408]
 
-> If the first 4 bit are 0 OR the 4th bit is 1, it is a eRPM frame, the other ranges are EDT frames.
+> If the first four bits are 0 OR the 4th bit is 1, it is a eRPM frame, the other ranges are EDT frames.
 
 ### EDT Frames
 This is where EDT versions come into play if not explicitly stated, the values are available in all versions
@@ -76,22 +76,23 @@ To disable EDT , the ESC has to recieve the `DIGITAL_CMD_EXTENDED_TELEMETRY_DISA
 
 ## Feature autodiscovery
 The only mandatory frame is the status frame.
-All available data is sent if EDT has been enabled, it is not necessary to enable specific frames on the receiving end.
+All available data is sent if EDT has been enabled - it is not necessary to enable specific frames on the receiving end.
 
 ## Frame scheduling
 By default eRPM telemetry is sent back to the FC, and every ESC firmware has to decide the best frame scheduling based on their configurations, use cases or preferences.
 
-The following are an example schedule for transmitting EDT frames:
+The following is an example schedule for transmitting EDT frames:
 - `eRPM`: is sent if there is no other telemetry frame
-- `Status`: - 1000 ms for example, at ms cycle 0; as a response of extended telemetry enable/disable commands; next frame when an event happens
-- `Temperature`: - 1000 ms for example, at ms cycle 333
-- `Voltage`: - 1000 ms for example, at ms cycle 666
+- `Status`: 1000 ms for example, at ms cycle 0; as a response of extended telemetry enable/disable commands; next frame when an event happens
+- `Temperature`: 1000 ms for example, at ms cycle 333
+- `Voltage`: 1000 ms for example, at ms cycle 666
 
 ## Glossary
 * TBD: To be defined
-* prefix: The first 4 bit of the telemetry frame
-* FC: Flight-controller, or receiver of the telemetry frame to keep it general
+* prefix: The first four bits of the telemetry frame
+* FC: Flight controller or receiver of the telemetry frame
 
 ## History
-* v2.0.0 - Updated status frame, to add demag, desync and stall events, and max demag metric. Replaced _debug3_ frame by demag metric frame.
+* v2.0.1 - Improved wording, fixed typos
+* v2.0.0 - Updated status frame to add demag, desync and stall events, and max demag metric. Replaced _debug3_ frame by demag metric frame.
 * v1.0.0 - Initial version
