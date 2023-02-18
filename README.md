@@ -23,19 +23,46 @@ or in other words:
 eRPM = m * 2 ^ e
 ```
 
-From this, one can easily see that the same eRPM values could be encoded in multiple different ways, let's for example take the eRPM value of 8, it could be encoded in these variations:
+From this, one can easily see that the same eRPM values could be encoded in multiple different ways.
 
+8 can be encoded in this four ways:
 ```
 000 0 0000 1000
 001 0 0000 0100
 010 0 0000 0010
 011 0 0000 0001
 ```
-This is true for a lot of different values, thus the idea was born to always right shift the rpm values as far as possible, so that no ambiguity is left and each value has only one representation, the other - now free - values can be used to encode different data.
 
-The first three bits (the exponent) together with the 4th bit allow to distinguish between eRPM and extended DSHOT frames. Those four bits are called the **prefix**.
+512 can be encoded in this seven ways:
+
+```
+001 1 0000 0000
+010 0 1000 0000
+011 0 0100 0000
+100 0 0010 0000
+101 0 0001 0000
+110 0 0000 1000
+111 0 0000 0100
+```
+
+This is true for most values, thus the idea was born to normalize eRPM values, so that no ambiguity is left and each value has only one representation, the other - now free - values can be used to encode different data.
+
+The first three bits (the exponent) together with the 4th bit (the MSB of the value) allow to distinguish between eRPM and extended DSHOT frames. Those four bits are called the **prefix**.
+
+### Normalization
+To normalize an eRPM value, the goal is to set Bit 4 by decreasing the exponent and left shifting the value. An implementation of the normalization could look something like so:
+
+- 1. Check exponent
+- 1.a. Exponent is 0: **Done**
+- 1.b. Exponent > 0
+- 2.a. Bit 4 is 1: **Done**
+- 2.b. Bit 4 is 0
+- 3. Decrease exponent, left shift value by one
+- 4. Go to step 1
 
 ### eRPM Frames
+After applying the normalization, the following ranges are possible for eRPM values:
+
 - `000 0 mmmm mmmm` - [0, 1, 2, ... , 255]
 - `000 1 mmmm mmmm` - [256, 257, 258, ..., 511]
 - `001 1 mmmm mmmm` - [512, 514, 516, ... , 1022]
