@@ -5,10 +5,11 @@ Extended DSHOT Telemetry, as the name suggests, extends the telemetry data which
 In addition to the eRPM data which was the initial data being transmitted back to the flight-controller, EDT allows the encoding of further details in the telemetry frame.
 
 ## Frame structure
-The frame structure of the telemetry frame is 16 bits long: `eeem mmmm mmmm`
+The frame structure of the telemetry frame is 16 bits long: `eeem mmmm mmmm cccc`
 
 * `eee`: the exponent
 * `mmmmmmmmm`: the eRPM value
+* `cccc`: the checksum
 
 To calculate the real eRPM value, it is shifted to the left by the exponent:
 
@@ -58,6 +59,13 @@ This is where EDT versions come into play if not explicitly stated, the values a
 - `110 0 mmmm mmmm` - **Demag metric** frame [0, 1, ..., 255] (since v2.0.0)
 - `111 0 mmmm mmmm` - **Status frame**: Bit[7] = demag event, Bit[6] = desync event, Bit[5] = Stall event, Bit[3-1] - Demag metric  max level (since v2.0.0)
 
+### Checksum
+The 4 bits checksum is calculated the same way no matter if eRPM or EDT frame. Value in this example are the 12 data bits.
+
+```
+crc = (value ^ (value >> 4) ^ (value >> 8)) & 0x0F;
+```
+
 ## Enabling EDT
 To enable EDT the ESC has to receive the `DIGITAL_CMD_EXTENDED_TELEMETRY_ENABLE` command (DSHOT command 13) at least 6 times in succession. It then answers with a single version frame:
 
@@ -91,6 +99,9 @@ The following is an example schedule for transmitting EDT frames:
 * TBD: To be defined
 * prefix: The first four bits of the telemetry frame
 * FC: Flight controller or receiver of the telemetry frame
+
+## Further Reading
+* [DSHOT - The missing Handbook](https://brushlesswhoop.com/dshot-and-bidirectional-dshot/)
 
 ## History
 * v2.0.1 - Improved wording, fixed typos
