@@ -135,5 +135,5 @@ The following is an example schedule for transmitting EDT frames:
 
 ## History
 * v2.0.1 - Improved wording, fixed typos
-* v2.0.0 - Updated status frame to add demag, desync and stall events, and max demag metric. Replaced _debug3_ frame by demag metric frame.
+* v2.0.0 - Updated status frame to add demag, desync and stall events, and max demag metric. Replaced _debug3_ frame by stress level frame.
 * v1.0.0 - Initial version
