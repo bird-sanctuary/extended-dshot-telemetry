@@ -83,8 +83,8 @@ This is where EDT versions come into play if not explicitly stated, the values a
 - `011 0 mmmm mmmm` - **Current** frame with a step size of 1A [0, 1, ..., 255]
 - `100 0 mmmm mmmm` - **Debug frame 1** not associated with any specific value, can be used to debug ESC firmware
 - `101 0 mmmm mmmm` - **Debug frame 2** not associated with any specific value, can be used to debug ESC firmware
-- `110 0 mmmm mmmm` - **Demag metric** frame [0, 1, ..., 255] (since v2.0.0)
-- `111 0 mmmm mmmm` - **Status frame**: Bit[7] = demag event, Bit[6] = desync event, Bit[5] = Stall event, Bit[3-1] - Demag metric  max level (since v2.0.0)
+- `110 0 mmmm mmmm` - **Stress level** frame [0, 1, ..., 255] (since v2.0.0)
+- `111 0 mmmm mmmm` - **Status frame**: Bit[7] = alert event, Bit[6] = warning event, Bit[5] = error event, Bit[3-1] - Max. stress level [0-15] (since v2.0.0)
 
 ### Checksum
 The 4 bits checksum is calculated the same way no matter if eRPM or EDT frame. Value in this example are the 12 data bits.
@@ -125,7 +125,10 @@ The following is an example schedule for transmitting EDT frames:
 ## Glossary
 * TBD: To be defined
 * prefix: The first four bits of the telemetry frame
-* FC: Flight controller or receiver of the telemetry frame
+* FC: Flight controller or receiver of the telemetry frame* Stress level: Indicates the effort the ESC has to make to keep commutation going. In Blheli_S/Bluejay for example it is related to desync events. When it reaches the maximum indicates that the ESC cannot make reliable commutation. Zero is the ideal value, when ESC commutation is perfect.
+* ESC alert event - Notification made for statistical/debug purposes. In Bluejay, for example this is the demag event. Later all this events can be inspected in the Blackbox Viewer or any other tool.
+* ESC warning event - Notifies suspecting or unusual behaviour. In Bluejay, for example this is the desync event. Later all this events can be inspected in the Blackbox Viewer or any other tool.
+* ESC error event - Notifies a serious problem. In Bluejay, for example this is the stall event. Later all this events can be inspected in the Blackbox Viewer or any other tool.
 
 ## Further Reading
 * [DSHOT - The missing Handbook](https://brushlesswhoop.com/dshot-and-bidirectional-dshot/)
