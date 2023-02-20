@@ -1,14 +1,15 @@
 # Extended DSHOT Telemetry (EDT) Specification
 
-Extended DSHOT Telemery extends - as the name suggests - the telemetry data which is sent from ESC (via signal wire) to the flight-controller. For this to work, bi-directional DSHOT needs to be active.
+Extended DSHOT Telemetry, as the name suggests, extends the telemetry data which is sent from ESC (via signal wire) to the flight-controller. For this to work, bi-directional DSHOT needs to be active.
 
-In addition to the eRPM data which was the initial data being transmitted back to the flight-controller, EDT allows to encode further details in the telemetry frame.
+In addition to the eRPM data which was the initial data being transmitted back to the flight-controller, EDT allows the encoding of further details in the telemetry frame.
 
 ## Frame structure
-The frame structure of the telemetry frame is 16 bit long: `eeem mmmm mmmm`
+The frame structure of the telemetry frame is 16 bits long: `eeem mmmm mmmm cccc`
 
 * `eee`: the exponent
 * `mmmmmmmmm`: the eRPM value
+* `cccc`: the checksum
 
 To calculate the real eRPM value, it is shifted to the left by the exponent:
 
@@ -22,19 +23,46 @@ or in other words:
 eRPM = m * 2 ^ e
 ```
 
-From this, one can easily see, that the same eRPM values could be encoded in multiple different ways, let's for example take the eRPM value of 8, it could be encoded in these variations:
+From this, one can easily see that the same eRPM values could be encoded in multiple different ways.
 
+8 can be encoded in this four ways:
 ```
 000 0 0000 1000
 001 0 0000 0100
 010 0 0000 0010
 011 0 0000 0001
 ```
-This is true for a lot of different values, thus the idea was born to always right shift the rpm values as far as possible, so that no ambiguity is left and each value has only one representation, the other - now free - values can be used to encode different data.
 
-The first 3 bit (the exponent) together with the 4th bit allow to distinguish if it is an eRPM Frame, or an extended DSHOT frame. Those four bits are called the **prefix**.
+512 can be encoded in this seven ways:
+
+```
+001 1 0000 0000
+010 0 1000 0000
+011 0 0100 0000
+100 0 0010 0000
+101 0 0001 0000
+110 0 0000 1000
+111 0 0000 0100
+```
+
+This is true for most values, thus the idea was born to normalize eRPM values, so that no ambiguity is left and each value has only one representation, the other - now free - values can be used to encode different data.
+
+The first three bits (the exponent) together with the 4th bit (the MSB of the value) allow to distinguish between eRPM and extended DSHOT frames. Those four bits are called the **prefix**.
+
+### Normalization
+To normalize an eRPM value, the goal is to set Bit 4 by decreasing the exponent and left shifting the value. An implementation of the normalization could look something like so:
+
+- 1. Check exponent
+- 1.a. Exponent is 0: **Done**
+- 1.b. Exponent > 0
+- 2.a. Bit 4 is 1: **Done**
+- 2.b. Bit 4 is 0
+- 3. Decrease exponent, left shift value by one
+- 4. Go to step 1
 
 ### eRPM Frames
+After applying the normalization, the following ranges are possible for eRPM values:
+
 - `000 0 mmmm mmmm` - [0, 1, 2, ... , 255]
 - `000 1 mmmm mmmm` - [256, 257, 258, ..., 511]
 - `001 1 mmmm mmmm` - [512, 514, 516, ... , 1022]
@@ -45,7 +73,7 @@ The first 3 bit (the exponent) together with the 4th bit allow to distinguish if
 - `110 1 mmmm mmmm` - [16384, 16448, 16512, ..., 32704]
 - `111 1 mmmm mmmm` - [32768, 32896, 33024, ..., 65408]
 
-> If the first 4 bit are 0 OR the 4th bit is 1, it is a eRPM frame, the other ranges are EDT frames.
+> If the first four bits are 0 OR the 4th bit is 1, it is a eRPM frame, the other ranges are EDT frames.
 
 ### EDT Frames
 This is where EDT versions come into play if not explicitly stated, the values are available in all versions
@@ -55,8 +83,15 @@ This is where EDT versions come into play if not explicitly stated, the values a
 - `011 0 mmmm mmmm` - **Current** frame with a step size of 1A [0, 1, ..., 255]
 - `100 0 mmmm mmmm` - **Debug frame 1** not associated with any specific value, can be used to debug ESC firmware
 - `101 0 mmmm mmmm` - **Debug frame 2** not associated with any specific value, can be used to debug ESC firmware
-- `110 0 mmmm mmmm` - **Demag metric** frame [0, 1, ..., 255] (since v2.0.0)
-- `111 0 mmmm mmmm` - **Status frame**: Bit[7] = demag event, Bit[6] = desync event, Bit[5] = Stall event, Bit[3-1] - Demag metric  max level (since v2.0.0)
+- `110 0 mmmm mmmm` - **Stress level** frame [0, 1, ..., 255] (since v2.0.0)
+- `111 0 mmmm mmmm` - **Status frame**: Bit[7] = alert event, Bit[6] = warning event, Bit[5] = error event, Bit[3-1] - Max. stress level [0-15] (since v2.0.0)
+
+### Checksum
+The 4 bits checksum is calculated the same way no matter if eRPM or EDT frame. Value in this example are the 12 data bits.
+
+```
+crc = (value ^ (value >> 4) ^ (value >> 8)) & 0x0F;
+```
 
 ## Enabling EDT
 To enable EDT the ESC has to receive the `DIGITAL_CMD_EXTENDED_TELEMETRY_ENABLE` command (DSHOT command 13) at least 6 times in succession. It then answers with a single version frame:
@@ -76,22 +111,29 @@ To disable EDT , the ESC has to recieve the `DIGITAL_CMD_EXTENDED_TELEMETRY_DISA
 
 ## Feature autodiscovery
 The only mandatory frame is the status frame.
-All available data is sent if EDT has been enabled, it is not necessary to enable specific frames on the receiving end.
+All available data is sent if EDT has been enabled - it is not necessary to enable specific frames on the receiving end.
 
 ## Frame scheduling
 By default eRPM telemetry is sent back to the FC, and every ESC firmware has to decide the best frame scheduling based on their configurations, use cases or preferences.
 
-The following are an example schedule for transmitting EDT frames:
+The following is an example schedule for transmitting EDT frames:
 - `eRPM`: is sent if there is no other telemetry frame
-- `Status`: - 1000 ms for example, at ms cycle 0; as a response of extended telemetry enable/disable commands; next frame when an event happens
-- `Temperature`: - 1000 ms for example, at ms cycle 333
-- `Voltage`: - 1000 ms for example, at ms cycle 666
+- `Status`: 1000 ms for example, at ms cycle 0; as a response of extended telemetry enable/disable commands; next frame when an event happens
+- `Temperature`: 1000 ms for example, at ms cycle 333
+- `Voltage`: 1000 ms for example, at ms cycle 666
 
 ## Glossary
 * TBD: To be defined
-* prefix: The first 4 bit of the telemetry frame
-* FC: Flight-controller, or receiver of the telemetry frame to keep it general
+* prefix: The first four bits of the telemetry frame
+* FC: Flight controller or receiver of the telemetry frame* Stress level: Indicates the effort the ESC has to make to keep commutation going. In Blheli_S/Bluejay for example it is related to desync events. When it reaches the maximum indicates that the ESC cannot make reliable commutation. Zero is the ideal value, when ESC commutation is perfect.
+* ESC alert event - Notification made for statistical/debug purposes. In Bluejay, for example this is the demag event. Later all this events can be inspected in the Blackbox Viewer or any other tool.
+* ESC warning event - Notifies suspecting or unusual behaviour. In Bluejay, for example this is the desync event. Later all this events can be inspected in the Blackbox Viewer or any other tool.
+* ESC error event - Notifies a serious problem. In Bluejay, for example this is the stall event. Later all this events can be inspected in the Blackbox Viewer or any other tool.
+
+## Further Reading
+* [DSHOT - The missing Handbook](https://brushlesswhoop.com/dshot-and-bidirectional-dshot/)
 
 ## History
-* v2.0.0 - Updated status frame, to add demag, desync and stall events, and max demag metric. Replaced _debug3_ frame by demag metric frame.
+* v2.0.1 - Improved wording, fixed typos
+* v2.0.0 - Updated status frame to add demag, desync and stall events, and max demag metric. Replaced _debug3_ frame by stress level frame.
 * v1.0.0 - Initial version
