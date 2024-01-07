@@ -84,7 +84,7 @@ This is where EDT versions come into play if not explicitly stated, the values a
 - `100 0 mmmm mmmm` - **Debug frame 1** not associated with any specific value, can be used to debug ESC firmware
 - `101 0 mmmm mmmm` - **Debug frame 2** not associated with any specific value, can be used to debug ESC firmware
 - `110 0 mmmm mmmm` - **Stress level** frame [0, 1, ..., 255] (since v2.0.0)
-- `111 0 mmmm mmmm` - **Status frame**: Bit[7] = alert event, Bit[6] = warning event, Bit[5] = error event, Bit[3-1] - Max. stress level [0-15] (since v2.0.0)
+- `111 0 mmmm mmmm` - **Status frame**: Bit[7] = alert event, Bit[6] = warning event, Bit[5] = error event, Bit[3-0] - Max. stress level [0-15] (since v2.0.0)
 
 ### Checksum
 The 4 bits checksum is calculated the same way no matter if eRPM or EDT frame. Value in this example are the 12 data bits.
