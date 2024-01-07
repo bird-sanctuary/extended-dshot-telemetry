@@ -134,6 +134,7 @@ The following is an example schedule for transmitting EDT frames:
 * [DSHOT - The missing Handbook](https://brushlesswhoop.com/dshot-and-bidirectional-dshot/)
 
 ## History
+* v2.0.2 - Fixed typo in stress level frame
 * v2.0.1 - Improved wording, fixed typos
 * v2.0.0 - Updated status frame to add demag, desync and stall events, and max demag metric. Replaced _debug3_ frame by stress level frame.
 * v1.0.0 - Initial version
