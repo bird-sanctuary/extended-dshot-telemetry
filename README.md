@@ -4,6 +4,9 @@ Extended DSHOT Telemetry, as the name suggests, extends the telemetry data which
 
 In addition to the eRPM data which was the initial data being transmitted back to the flight-controller, EDT allows the encoding of further details in the telemetry frame.
 
+## Prerequisites
+* Bits are counted from the least significant bit (LSB) starting at 0
+
 ## Frame structure
 The frame structure of the telemetry frame is 16 bits long: `eeem mmmm mmmm cccc`
 
@@ -47,16 +50,16 @@ From this, one can easily see that the same eRPM values could be encoded in mult
 
 This is true for most values, thus the idea was born to normalize eRPM values, so that no ambiguity is left and each value has only one representation, the other - now free - values can be used to encode different data.
 
-The first three bits (the exponent) together with the 4th bit (the MSB of the value) allow to distinguish between eRPM and extended DSHOT frames. Those four bits are called the **prefix**.
+The last three bits (the exponent) together with the 8th bit (the MSB of the value) allow to distinguish between eRPM and extended DSHOT frames. Those four bits are called the **prefix**.
 
 ### Normalization
-To normalize an eRPM value, the goal is to set Bit 4 by decreasing the exponent and left shifting the value. An implementation of the normalization could look something like so:
+To normalize an eRPM value, the goal is to set Bit 8 by decreasing the exponent and left shifting the value. An implementation of the normalization could look something like so:
 
 - 1. Check exponent
 - 1.a. Exponent is 0: **Done**
 - 1.b. Exponent > 0
-- 2.a. Bit 4 is 1: **Done**
-- 2.b. Bit 4 is 0
+- 2.a. Bit 8 is 1: **Done**
+- 2.b. Bit 8 is 0
 - 3. Decrease exponent, left shift value by one
 - 4. Go to step 1
 
@@ -73,7 +76,7 @@ After applying the normalization, the following ranges are possible for eRPM val
 - `110 1 mmmm mmmm` - [16384, 16448, 16512, ..., 32704]
 - `111 1 mmmm mmmm` - [32768, 32896, 33024, ..., 65408]
 
-> If the first four bits are 0 OR the 4th bit is 1, it is a eRPM frame, the other ranges are EDT frames.
+> If the last four bits are 0 OR the 8th bit is 1, it is a eRPM frame, the other ranges are EDT frames.
 
 ### EDT Frames
 This is where EDT versions come into play if not explicitly stated, the values are available in all versions
@@ -84,7 +87,7 @@ This is where EDT versions come into play if not explicitly stated, the values a
 - `100 0 mmmm mmmm` - **Debug frame 1** not associated with any specific value, can be used to debug ESC firmware
 - `101 0 mmmm mmmm` - **Debug frame 2** not associated with any specific value, can be used to debug ESC firmware
 - `110 0 mmmm mmmm` - **Stress level** frame [0, 1, ..., 255] (since v2.0.0)
-- `111 0 mmmm mmmm` - **Status frame**: Bit[7] = alert event, Bit[6] = warning event, Bit[5] = error event, Bit[3-0] - Max. stress level [0-15] (since v2.0.0)
+- `111 0 mmmm mmmm` - **Status frame**: Bit[7] = alert event, Bit[6] = warning event, Bit[5] = error event, Bit[3-0] - Max. stress level [0-15] (since v2.0.0). At this moment Bit[4] is not being used.
 
 ### Checksum
 The 4 bits checksum is calculated the same way no matter if eRPM or EDT frame. Value in this example are the 12 data bits.
@@ -137,8 +140,9 @@ A bi-directional response frame (EDT frame) is to be sent 30μs after a DSHOT fr
 * [DSHOT - The missing Handbook](https://brushlesswhoop.com/dshot-and-bidirectional-dshot/)
 
 ## History
-* v2.0.2 - Fixed typo in stress level frame
+* v2.1.1 - Clarified Bit index direction
 * v2.1.0 - Added section about timing
+* v2.0.2 - Fixed typo in stress level frame
 * v2.0.1 - Improved wording, fixed typos
 * v2.0.0 - Updated status frame to add demag, desync and stall events, and max demag metric. Replaced _debug3_ frame by stress level frame.
 * v1.0.0 - Initial version
